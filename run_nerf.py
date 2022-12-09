@@ -1,6 +1,6 @@
 import os, sys
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import numpy as np
 import imageio
 import json
@@ -190,10 +190,28 @@ def render_path(render_poses, hwf, K, chunk, render_kwargs, gt_imgs=None, savedi
         if savedir is not None:
             rgb8 = to8b(rgbs[-1])    ## rgb[-1] 表示最新生成的图像
             dis8 = to8b(disps[-1] / np.max(disps))
+            print(f"min:{np.min(disps)},max{np.max(disps)}")
+
             filename = os.path.join(savedir, '{:03d}.png'.format(i))
             filename_dis = os.path.join(savedir,'{:03d}_dis.png'.format(i))
             imageio.imwrite(filename, rgb8)
             imageio.imwrite(filename_dis,dis8)
+
+            import matplotlib.pyplot as plt
+            import matplotlib as mpl
+            fig, ax = plt.subplots(figsize=(20, 1))
+
+            cmap = mpl.cm.jet
+
+            norm = mpl.colors.Normalize(vmin=0, vmax=255)
+            fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+                         cax=ax, orientation='horizontal', label='Some Units')
+            plt.savefig(f'bar.png')
+            plt.close('all')  # 关窗口
+
+
+            plt.imshow(dis8, cmap="jet")
+            plt.savefig(os.path.join(savedir, f"depth{i}.png"))
 
 
 
@@ -432,7 +450,7 @@ def render_rays(ray_batch,
     ## r = o + t * d
     ''' For Kitti360'''
     pts = rays_o[...,None,:] + rays_d[...,None,:] * z_vals[...,:,None] # [N_rays, N_samples, 3]，pts 是每一条 ray 上的采样点的坐标
-    pts /= 100
+    pts /= 120
     # from camera_pose_visualizer import CameraPoseVisualizer
     # visualizer = CameraPoseVisualizer([-5, 5], [-5, 5], [-5, 5])
     # visualizer.pts_visualize(pts.detach().cpu().numpy())
@@ -453,6 +471,7 @@ def render_rays(ray_batch,
 
         z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
         pts = rays_o[...,None,:] + rays_d[...,None,:] * z_vals[...,:,None] # [N_rays, N_samples + N_importance, 3]
+        pts /= 120
 
         run_fn = network_fn if network_fine is None else network_fine
 #         raw = run_network(pts, fn=run_fn)

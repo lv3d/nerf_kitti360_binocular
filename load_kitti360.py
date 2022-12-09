@@ -114,7 +114,7 @@ def _load_data(datadir,end_iterion=424,sequence ='2013_05_28_drive_0000_sync'):
     c2w = np.stack(all_poses)
 
     '''Generate test file'''
-    i_test = np.array([3,4])
+    i_test = np.array([5])
 
     return c2w,imgs, K_00,i_test
 
